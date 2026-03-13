@@ -202,9 +202,9 @@
     .works-list.open { display: block; }
     .work-item {
       display: flex;
-      align-items: baseline;
+      align-items: flex-start;
       gap: 8px;
-      padding: 6px 0;
+      padding: 8px 0;
       border-bottom: 1px solid var(--border);
       font-size: 0.85rem;
     }
@@ -217,13 +217,34 @@
       font-size: 0.75rem;
       color: var(--text-muted);
       flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .work-title {
+      flex: 1;
+      min-width: 0;
+      white-space: normal;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+    .work-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+    .work-review-pts {
+      color: var(--warning);
+      font-weight: 600;
+      font-size: 0.8rem;
+      white-space: nowrap;
     }
     .work-pts {
-      margin-left: auto;
       color: var(--primary-light);
       font-weight: 600;
       font-size: 0.8rem;
-      flex-shrink: 0;
+      white-space: nowrap;
     }
     /* History tab */
     .date-nav {
@@ -1068,8 +1089,11 @@ function renderWorksBreakdown(data) {
         ${genreWorks.map(w => `
           <div class="work-item">
             <span class="work-rank-badge">${w.rank}位</span>
-            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${w.title}</span>
-            <span class="work-pts">${w.points}pt</span>
+            <span class="work-title">${w.title}</span>
+            <span class="work-meta">
+              <span class="work-review-pts">★${w.reviewPoints ? w.reviewPoints.toLocaleString() : '-'}</span>
+              <span class="work-pts">${w.points}pt</span>
+            </span>
           </div>
         `).join('')}
       </div>
@@ -1248,14 +1272,18 @@ function parseKakuyomuHTML(html) {
     // カクヨムネクスト作品は集計対象外
     if (item.querySelector('.widget-kakuyomuNext-info')) return;
 
-    const rankEl = item.querySelector('.widget-work-rank');
-    const titleEl = item.querySelector('.widget-workCard-title');
-    const genreEl = item.querySelector('.widget-workCard-genre');
-    const rank = rankEl ? parseInt(rankEl.textContent.trim()) : idx + 1;
-    const title = titleEl ? titleEl.textContent.trim() : '';
-    const genre = genreEl ? genreEl.textContent.trim() : '不明';
+    const rankEl    = item.querySelector('.widget-work-rank');
+    const titleEl   = item.querySelector('.widget-workCard-title');
+    const genreEl   = item.querySelector('.widget-workCard-genre');
+    const reviewEl  = item.querySelector('.widget-workCard-reviewPoints');
+    const rank   = rankEl  ? parseInt(rankEl.textContent.trim()) : idx + 1;
+    const title  = titleEl ? titleEl.textContent.trim() : '';
+    const genre  = genreEl ? genreEl.textContent.trim() : '不明';
+    // ★6,209 → 6209 に変換
+    const reviewRaw = reviewEl ? reviewEl.textContent.trim().replace(/[★,]/g, '') : '0';
+    const reviewPoints = parseInt(reviewRaw) || 0;
     const points = Math.max(0, 11 - rank);
-    works.push({ rank, title, genre, points });
+    works.push({ rank, title, genre, points, reviewPoints });
   });
 
   // ジャンル別集計（拡充版）

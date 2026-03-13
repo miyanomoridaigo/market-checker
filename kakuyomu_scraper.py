@@ -123,9 +123,10 @@ def scrape_rankings() -> list[dict]:
         if item.select_one(".widget-kakuyomuNext-info"):
             continue
 
-        rank_el = item.select_one(".widget-work-rank")
-        title_el = item.select_one(".widget-workCard-title")
-        genre_el = item.select_one(".widget-workCard-genre")
+        rank_el   = item.select_one(".widget-work-rank")
+        title_el  = item.select_one(".widget-workCard-title")
+        genre_el  = item.select_one(".widget-workCard-genre")
+        review_el = item.select_one(".widget-workCard-reviewPoints")
 
         # ランク取得
         rank_text = rank_el.get_text(strip=True) if rank_el else ""
@@ -140,15 +141,23 @@ def scrape_rankings() -> list[dict]:
         rank_seen.add(rank)
         rank = int(rank) if rank == int(rank) else idx + 1
 
-        title = title_el.get_text(strip=True) if title_el else "不明"
-        genre = genre_el.get_text(strip=True) if genre_el else "不明"
+        title  = title_el.get_text(strip=True) if title_el else "不明"
+        genre  = genre_el.get_text(strip=True) if genre_el else "不明"
         points = calc_points(rank)
 
+        # ★6,209 → 6209 に変換
+        review_raw = review_el.get_text(strip=True) if review_el else "0"
+        try:
+            review_points = int(review_raw.replace("★", "").replace(",", ""))
+        except ValueError:
+            review_points = 0
+
         works.append({
-            "rank": rank,
-            "title": title,
-            "genre": genre,
-            "points": points,
+            "rank":         rank,
+            "title":        title,
+            "genre":        genre,
+            "points":       points,
+            "reviewPoints": review_points,
         })
 
     print(f"[INFO] 取得完了: {len(works)}作品")
