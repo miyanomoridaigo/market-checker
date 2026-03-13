@@ -451,44 +451,27 @@
     .gt-mini-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
     .gt-num { font-weight: 700; color: var(--primary-light); }
     .gt-muted { color: var(--text-muted); font-size: 0.8rem; }
-    /* ツールチップのラッパー（overflow:hiddenなし・::afterを乗せる） */
-    .best-work-wrap {
-      position: relative;
-      display: inline-block;
-      max-width: 240px;
-      cursor: default;
-    }
-    /* テキスト省略はここだけで管理 */
-    .best-work {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+    /* 最高順位作品セル */
+    .best-work-wrap { display: inline-block; max-width: 240px; cursor: default; }
+    .best-work { font-size: 0.78rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .best-work-wrap:hover .best-work { color: var(--text); }
-    /* ツールチップ本体 */
-    .best-work-wrap::after {
-      content: attr(data-tooltip);
+    /* JS tooltip (body直下に固定配置) */
+    #js-tooltip {
       display: none;
-      position: absolute;
-      bottom: calc(100% + 6px);
-      left: 0;
+      position: fixed;
       background: #2a2a4a;
-      color: var(--text);
-      border: 1px solid var(--border);
+      color: #e0e0f0;
+      border: 1px solid #2d2d4e;
       border-radius: 6px;
       padding: 6px 10px;
       font-size: 0.8rem;
       white-space: normal;
       max-width: 320px;
-      min-width: 160px;
       line-height: 1.5;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-      z-index: 50;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+      z-index: 9999;
       pointer-events: none;
     }
-    .best-work-wrap:hover::after { display: block; }
     /* Trend metric toggle */
     .trend-controls {
       display: flex;
@@ -514,6 +497,9 @@
   </style>
 </head>
 <body>
+
+<!-- JS Tooltip -->
+<div id="js-tooltip"></div>
 
 <!-- Loading Overlay -->
 <div class="loading-overlay" id="loading-overlay">
@@ -1489,8 +1475,48 @@ function hideLoading() {
   document.getElementById('loading-overlay').classList.remove('show');
 }
 
+// ==================== Tooltip ====================
+function initTooltip() {
+  const tip = document.getElementById('js-tooltip');
+  let current = null;
+
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest('[data-tooltip]');
+    if (!el || !el.getAttribute('data-tooltip')) return;
+    current = el;
+    tip.textContent = el.getAttribute('data-tooltip');
+    tip.style.display = 'block';
+    positionTip(e);
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!current) return;
+    positionTip(e);
+  });
+
+  document.addEventListener('mouseout', e => {
+    const el = e.target.closest('[data-tooltip]');
+    if (!el) return;
+    current = null;
+    tip.style.display = 'none';
+  });
+
+  function positionTip(e) {
+    const margin = 12;
+    const tipW = tip.offsetWidth;
+    const tipH = tip.offsetHeight;
+    let x = e.clientX + margin;
+    let y = e.clientY - tipH - margin;
+    if (x + tipW > window.innerWidth - 8) x = e.clientX - tipW - margin;
+    if (y < 8) y = e.clientY + margin;
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+  }
+}
+
 // ==================== Init ====================
 async function init() {
+  initTooltip();
   loadSettingsFromStorage();
   const config = getConfigFromForm();
   if (config.apiKey && config.projectId && config.authDomain) {
