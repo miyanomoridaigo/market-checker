@@ -159,27 +159,47 @@ def scrape_rankings() -> list[dict]:
 # ジャンル集計
 # =============================================
 def aggregate_genres(works: list[dict]) -> dict:
-    """ジャンルごとにポイントと作品数を集計する"""
-    genres: dict[str, dict] = {}
+    """ジャンルごとに各種指標を集計する"""
+    genre_map: dict[str, dict] = {}
 
     for w in works:
         g = w["genre"]
-        if g not in genres:
-            genres[g] = {"points": 0, "count": 0}
-        genres[g]["points"] += w["points"]
-        genres[g]["count"] += 1
+        if g not in genre_map:
+            genre_map[g] = {"points": 0, "count": 0, "top10Count": 0,
+                            "rank_sum": 0, "best_rank": 9999, "top_title": ""}
+        d = genre_map[g]
+        d["points"]    += w["points"]
+        d["count"]     += 1
+        d["rank_sum"]  += w["rank"]
+        if w["rank"] <= 10:
+            d["top10Count"] += 1
+        if w["rank"] < d["best_rank"]:
+            d["best_rank"] = w["rank"]
+            d["top_title"] = w["title"]
 
-    # ポイント降順でソート
+    # 派生値を計算してポイント降順でソート
+    genres: dict[str, dict] = {}
+    for name, d in genre_map.items():
+        genres[name] = {
+            "points":     d["points"],
+            "count":      d["count"],
+            "top10Count": d["top10Count"],
+            "avgRank":    round(d["rank_sum"] / d["count"], 1),
+            "bestRank":   d["best_rank"] if d["best_rank"] != 9999 else None,
+            "topTitle":   d["top_title"],
+        }
+
     sorted_genres = dict(
         sorted(genres.items(), key=lambda x: x[1]["points"], reverse=True)
     )
 
     print("\n[INFO] ジャンル別集計結果:")
-    print(f"{'順位':<4} {'ジャンル':<20} {'ポイント':<10} {'作品数':<8}")
-    print("-" * 46)
+    print(f"{'順位':<4} {'ジャンル':<20} {'Pt':<6} {'件数':<5} {'TOP10':<6} {'平均順位':<8} {'最高順位'}")
+    print("-" * 60)
     for i, (name, info) in enumerate(sorted_genres.items(), 1):
         marker = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f" {i}位"
-        print(f"{marker:<4} {name:<20} {info['points']:<10}pt {info['count']}作品")
+        print(f"{marker:<4} {name:<20} {info['points']:<6} {info['count']:<5} "
+              f"{info['top10Count']:<6} {info['avgRank']:<8} {info['bestRank']}位")
 
     return sorted_genres
 

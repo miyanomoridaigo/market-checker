@@ -373,6 +373,107 @@
     .conn-dot.connecting { background: var(--warning); animation: pulse 1s infinite; }
     /* Date selector in history */
     select.form-input { cursor: pointer; }
+    /* Summary cards */
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 900px) { .summary-cards { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .summary-cards { grid-template-columns: 1fr 1fr; } }
+    .summary-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .summary-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .summary-card.c1::before { background: linear-gradient(90deg, #6c5ce7, #a29bfe); }
+    .summary-card.c2::before { background: linear-gradient(90deg, #fd79a8, #e17055); }
+    .summary-card.c3::before { background: linear-gradient(90deg, #00b894, #55efc4); }
+    .summary-card.c4::before { background: linear-gradient(90deg, #fdcb6e, #e17055); }
+    .sc-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .sc-value { font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+    .sc-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* Sort/metric toggle */
+    .metric-toggle {
+      display: flex;
+      gap: 4px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+    }
+    .metric-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 5px 12px;
+      cursor: pointer;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .metric-btn.active { background: var(--primary); color: white; font-weight: 600; }
+    .metric-btn:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.07); }
+    /* Genre detail table */
+    .genre-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .genre-table th {
+      background: var(--card2);
+      padding: 9px 12px;
+      text-align: left;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+    .genre-table th.sortable { cursor: pointer; user-select: none; }
+    .genre-table th.sortable:hover { color: var(--primary-light); }
+    .genre-table th.sort-asc::after { content: ' ▲'; }
+    .genre-table th.sort-desc::after { content: ' ▼'; }
+    .genre-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .genre-table tr:hover td { background: rgba(108,92,231,0.05); }
+    .genre-table tr:last-child td { border-bottom: none; }
+    .gt-rank { font-size: 1.1rem; font-weight: 800; width: 40px; text-align: center; }
+    .gt-bar-cell { min-width: 80px; }
+    .gt-mini-bar-wrap { height: 5px; background: var(--border); border-radius: 3px; margin-top: 4px; }
+    .gt-mini-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+    .gt-num { font-weight: 700; color: var(--primary-light); }
+    .gt-muted { color: var(--text-muted); font-size: 0.8rem; }
+    .best-work { font-size: 0.78rem; color: var(--text-muted); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Trend metric toggle */
+    .trend-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    /* Donut chart */
+    .donut-wrap { position: relative; height: 280px; max-width: 340px; margin: 0 auto; }
+    /* Share badge */
+    .share-pill {
+      display: inline-block;
+      background: rgba(108,92,231,0.2);
+      color: var(--primary-light);
+      border-radius: 12px;
+      padding: 1px 7px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      margin-left: 6px;
+    }
   </style>
 </head>
 <body>
@@ -435,26 +536,86 @@
 
     <!-- Ranking Content -->
     <div id="ranking-content">
-      <div class="genre-grid">
-        <!-- Genre List -->
-        <div class="card">
-          <div class="card-title">ジャンル別ポイント</div>
-          <ul class="genre-list" id="genre-list">
-            <li style="color:var(--text-muted);padding:24px 0;text-align:center;">読み込み中...</li>
-          </ul>
+
+      <!-- Summary Cards -->
+      <div class="summary-cards" id="summary-cards">
+        <div class="summary-card c1">
+          <div class="sc-label">集計作品数</div>
+          <div class="sc-value" id="sc-total">-</div>
+          <div class="sc-sub" id="sc-total-sub">カクヨムネクスト除く</div>
         </div>
-        <!-- Chart -->
-        <div class="card">
-          <div class="card-title">ポイント分布</div>
-          <div class="chart-wrap">
+        <div class="summary-card c2">
+          <div class="sc-label">🏆 ポイント1位</div>
+          <div class="sc-value" id="sc-top-genre">-</div>
+          <div class="sc-sub" id="sc-top-pts">-</div>
+        </div>
+        <div class="summary-card c3">
+          <div class="sc-label">📦 最多ランクイン</div>
+          <div class="sc-value" id="sc-top-count">-</div>
+          <div class="sc-sub" id="sc-top-count-sub">-</div>
+        </div>
+        <div class="summary-card c4">
+          <div class="sc-label">⭐ 最高順位作品</div>
+          <div class="sc-value" id="sc-best-rank">-</div>
+          <div class="sc-sub" id="sc-best-title">-</div>
+        </div>
+      </div>
+
+      <!-- Genre Detail Table -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+          <div class="card-title" style="margin:0;">ジャンル別詳細分析</div>
+          <div class="metric-toggle" id="sort-toggle">
+            <button class="metric-btn active" onclick="setSortMode('points',this)">ポイント</button>
+            <button class="metric-btn" onclick="setSortMode('count',this)">ランクイン件数</button>
+            <button class="metric-btn" onclick="setSortMode('avgRank',this)">平均順位</button>
+            <button class="metric-btn" onclick="setSortMode('top10',this)">TOP10件数</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="genre-table" id="genre-table">
+            <thead>
+              <tr>
+                <th class="gt-rank">#</th>
+                <th>ジャンル</th>
+                <th>ポイント</th>
+                <th>件数</th>
+                <th>TOP10</th>
+                <th>平均順位</th>
+                <th>シェア</th>
+                <th>最高順位作品</th>
+              </tr>
+            </thead>
+            <tbody id="genre-table-body">
+              <tr><td colspan="8" style="color:var(--text-muted);padding:24px;text-align:center;">読み込み中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+          <div class="card-title" style="margin:0;">分布グラフ</div>
+          <div class="metric-toggle">
+            <button class="metric-btn active" onclick="setChartMode('points',this)">ポイント</button>
+            <button class="metric-btn" onclick="setChartMode('count',this)">件数</button>
+            <button class="metric-btn" onclick="setChartMode('share',this)">シェア率</button>
+          </div>
+        </div>
+        <div id="chart-container">
+          <div class="chart-wrap" id="bar-chart-wrap">
             <canvas id="genre-chart"></canvas>
+          </div>
+          <div class="donut-wrap" id="donut-chart-wrap" style="display:none;">
+            <canvas id="genre-donut"></canvas>
           </div>
         </div>
       </div>
 
       <!-- Works breakdown -->
       <div class="card">
-        <div class="card-title">ジャンル別ランクイン作品</div>
+        <div class="card-title">ジャンル別ランクイン作品（TOP10のみ）</div>
         <div id="works-breakdown">
           <div style="color:var(--text-muted);padding:16px 0;">読み込み中...</div>
         </div>
@@ -467,10 +628,14 @@
   <div class="tab-content" id="tab-trend">
 
     <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
-        <div class="card-title" style="margin:0;">過去のトレンド</div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <label style="font-size:0.85rem;color:var(--text-muted);">期間:</label>
+      <div class="trend-controls">
+        <div class="card-title" style="margin:0;">ジャンル別トレンド</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <div class="metric-toggle">
+            <button class="metric-btn active" onclick="setTrendMetric('points',this)">ポイント</button>
+            <button class="metric-btn" onclick="setTrendMetric('count',this)">件数</button>
+            <button class="metric-btn" onclick="setTrendMetric('avgRank',this)">平均順位</button>
+          </div>
           <select class="form-input" style="width:auto;padding:6px 10px;" id="trend-days" onchange="loadTrendData()">
             <option value="7">直近7日</option>
             <option value="14">直近14日</option>
@@ -484,7 +649,13 @@
     </div>
 
     <div class="card">
-      <div class="card-title">日次集計履歴</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+        <div class="card-title" style="margin:0;">日次集計履歴</div>
+        <div class="metric-toggle">
+          <button class="metric-btn active" onclick="setHistoryMetric('points',this)">ポイント</button>
+          <button class="metric-btn" onclick="setHistoryMetric('count',this)">件数</button>
+        </div>
+      </div>
       <div id="history-table-wrap">
         <div style="color:var(--text-muted);padding:16px 0;">読み込み中...</div>
       </div>
@@ -584,7 +755,14 @@ import {
 let db = null;
 let firebaseApp = null;
 let genreChart = null;
+let donutChart = null;
 let trendChart = null;
+let currentData = null;       // 今日のデータ
+let currentSortMode = 'points';
+let currentChartMode = 'points';
+let currentTrendMetric = 'points';
+let currentHistoryMetric = 'points';
+let trendRecords = [];
 const COLLECTION = 'kakuyomu_daily_rankings';
 const GENRE_COLORS = [
   '#6c5ce7','#fd79a8','#00b894','#fdcb6e','#e17055',
@@ -723,6 +901,7 @@ async function loadDayData(date) {
 }
 
 function renderRanking(data, date) {
+  currentData = data;
   // Header
   document.getElementById('display-date').textContent = formatDate(date);
   const ts = data.collectedAt;
@@ -730,95 +909,185 @@ function renderRanking(data, date) {
     const d = ts.toDate ? ts.toDate() : new Date(ts);
     document.getElementById('updated-at').textContent = '最終更新: ' + d.toLocaleString('ja-JP');
   }
-
-  // Sort genres by points
-  const genres = data.genres || {};
-  const sorted = Object.entries(genres).sort((a,b) => b[1].points - a[1].points);
-  const maxPts = sorted[0]?.[1]?.points || 1;
-
-  // Genre List
-  const listEl = document.getElementById('genre-list');
-  listEl.innerHTML = '';
-  sorted.forEach(([name, info], i) => {
-    const rankClass = i===0 ? 'rank-1' : i===1 ? 'rank-2' : i===2 ? 'rank-3' : 'rank-other';
-    const rankIcon = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : (i+1);
-    const pct = Math.round((info.points / maxPts) * 100);
-    const li = document.createElement('li');
-    li.className = 'genre-item';
-    li.innerHTML = `
-      <span class="genre-rank ${rankClass}">${rankIcon}</span>
-      <div class="genre-info">
-        <div class="genre-name">${name}</div>
-        <div class="genre-bar-wrap">
-          <div class="genre-bar" style="width:0%;background:${GENRE_COLORS[i%GENRE_COLORS.length]}" data-pct="${pct}"></div>
-        </div>
-        <div class="genre-count">${info.count}作品ランクイン</div>
-      </div>
-      <div>
-        <div class="genre-points">${info.points}<small style="font-size:0.7rem;color:var(--text-muted)">pt</small></div>
-      </div>
-    `;
-    listEl.appendChild(li);
-  });
-
-  // Animate bars
-  setTimeout(() => {
-    document.querySelectorAll('.genre-bar').forEach(bar => {
-      bar.style.width = bar.dataset.pct + '%';
-    });
-  }, 50);
-
-  // Chart
-  renderGenreChart(sorted);
-
-  // Works breakdown
-  renderWorksBreakdown(sorted, data.works || []);
+  renderSummaryCards(data);
+  renderGenreTable(data, currentSortMode);
+  renderGenreChart(data, currentChartMode);
+  renderWorksBreakdown(data);
 }
 
-function renderGenreChart(sorted) {
+function renderSummaryCards(data) {
+  const works = data.works || [];
+  const genres = data.genres || {};
+  const totalWorks = works.length;
+  // ポイント1位
+  const byPts = Object.entries(genres).sort((a,b) => b[1].points - a[1].points);
+  const [topGenre, topInfo] = byPts[0] || ['--', {points:0, count:0}];
+  // 件数1位
+  const byCount = Object.entries(genres).sort((a,b) => b[1].count - a[1].count);
+  const [countGenre, countInfo] = byCount[0] || ['--', {count:0}];
+  // 最高順位作品
+  const bestWork = [...works].sort((a,b) => a.rank - b.rank)[0];
+
+  document.getElementById('sc-total').textContent = totalWorks;
+  document.getElementById('sc-total-sub').textContent = `${Object.keys(genres).length}ジャンル`;
+  document.getElementById('sc-top-genre').textContent = topGenre;
+  document.getElementById('sc-top-pts').textContent = `${topInfo.points}pt / ${topInfo.count}作品`;
+  document.getElementById('sc-top-count').textContent = countGenre;
+  document.getElementById('sc-top-count-sub').textContent = `${countInfo.count}作品ランクイン`;
+  document.getElementById('sc-best-rank').textContent = bestWork ? `${bestWork.rank}位` : '--';
+  document.getElementById('sc-best-title').textContent = bestWork ? `${bestWork.title.substring(0,18)}…` : '--';
+}
+
+window.setSortMode = function(mode, btn) {
+  currentSortMode = mode;
+  document.querySelectorAll('#sort-toggle .metric-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (currentData) renderGenreTable(currentData, mode);
+};
+
+window.setChartMode = function(mode, btn) {
+  currentChartMode = mode;
+  btn.closest('.metric-toggle').querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (currentData) renderGenreChart(currentData, mode);
+};
+
+function getSorted(data, mode) {
+  const genres = data.genres || {};
+  const entries = Object.entries(genres);
+  if (mode === 'count')   return entries.sort((a,b) => b[1].count - a[1].count);
+  if (mode === 'avgRank') return entries.sort((a,b) => (a[1].avgRank||999) - (b[1].avgRank||999));
+  if (mode === 'top10')   return entries.sort((a,b) => b[1].top10Count - a[1].top10Count);
+  return entries.sort((a,b) => b[1].points - a[1].points); // default: points
+}
+
+function renderGenreTable(data, mode) {
+  const sorted = getSorted(data, mode);
+  const totalWorks = (data.works || []).length || 1;
+  const maxPts   = Math.max(...sorted.map(([,v]) => v.points), 1);
+  const maxCount = Math.max(...sorted.map(([,v]) => v.count), 1);
+  const tbody = document.getElementById('genre-table-body');
+  tbody.innerHTML = '';
+  sorted.forEach(([name, info], i) => {
+    const color = GENRE_COLORS[i % GENRE_COLORS.length];
+    const rankIcon = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : `${i+1}`;
+    const shareVal = ((info.count / totalWorks) * 100).toFixed(1);
+    const ptBarPct = Math.round((info.points / maxPts) * 100);
+    const cntBarPct = Math.round((info.count / maxCount) * 100);
+    const highlightPts   = mode === 'points'  ? 'style="color:var(--text);font-weight:700;"' : '';
+    const highlightCount = mode === 'count'   ? 'style="color:var(--text);font-weight:700;"' : '';
+    const highlightAvg   = mode === 'avgRank' ? 'style="color:var(--text);font-weight:700;"' : '';
+    const highlightTop10 = mode === 'top10'   ? 'style="color:var(--text);font-weight:700;"' : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="gt-rank">${rankIcon}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block;"></span>
+          <strong>${name}</strong>
+        </div>
+      </td>
+      <td class="gt-bar-cell" ${highlightPts}>
+        <span class="gt-num">${info.points}</span><span class="gt-muted">pt</span>
+        <div class="gt-mini-bar-wrap"><div class="gt-mini-bar" style="width:0%;background:${color}" data-pct="${ptBarPct}"></div></div>
+      </td>
+      <td ${highlightCount}>
+        <span class="gt-num">${info.count}</span><span class="gt-muted">件</span>
+        <div class="gt-mini-bar-wrap"><div class="gt-mini-bar" style="width:0%;background:${color}" data-pct="${cntBarPct}"></div></div>
+      </td>
+      <td ${highlightTop10}><span class="gt-num">${info.top10Count || 0}</span><span class="gt-muted">件</span></td>
+      <td ${highlightAvg}><span class="gt-num">${info.avgRank ? info.avgRank.toFixed(1) : '--'}</span><span class="gt-muted">位</span></td>
+      <td><span class="share-pill">${shareVal}%</span></td>
+      <td><div class="best-work" title="${info.topTitle||''}">${info.bestRank ? `${info.bestRank}位 ` : ''}${info.topTitle ? info.topTitle.substring(0,20)+'…' : '--'}</div></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  // Animate mini bars
+  setTimeout(() => {
+    tbody.querySelectorAll('.gt-mini-bar').forEach(b => { b.style.width = b.dataset.pct + '%'; });
+  }, 50);
+}
+
+function renderGenreChart(data, mode) {
+  const sorted = getSorted(data, mode);
+  const isShare = mode === 'share';
+  document.getElementById('bar-chart-wrap').style.display  = isShare ? 'none' : 'block';
+  document.getElementById('donut-chart-wrap').style.display = isShare ? 'block' : 'none';
+
+  if (isShare) {
+    // Donut
+    const ctx2 = document.getElementById('genre-donut').getContext('2d');
+    if (donutChart) donutChart.destroy();
+    const totalWorks = (data.works||[]).length || 1;
+    const byCount = Object.entries(data.genres||{}).sort((a,b)=>b[1].count-a[1].count);
+    donutChart = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: byCount.map(([n]) => n),
+        datasets: [{
+          data: byCount.map(([,v]) => v.count),
+          backgroundColor: byCount.map((_,i) => GENRE_COLORS[i%GENRE_COLORS.length]+'cc'),
+          borderColor: '#1a1a2e', borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color:'#e0e0f0', boxWidth:12, font:{size:11} }, position:'right' },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}件 (${((ctx.raw/totalWorks)*100).toFixed(1)}%)` } }
+        }
+      }
+    });
+    return;
+  }
+
+  const labels = sorted.map(([n]) => n);
+  const values = sorted.map(([,v]) => mode === 'count' ? v.count : v.points);
   const ctx = document.getElementById('genre-chart').getContext('2d');
   if (genreChart) genreChart.destroy();
   genreChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: sorted.map(([n]) => n),
+      labels,
       datasets: [{
-        data: sorted.map(([,v]) => v.points),
-        backgroundColor: sorted.map((_, i) => GENRE_COLORS[i % GENRE_COLORS.length] + 'cc'),
-        borderColor: sorted.map((_, i) => GENRE_COLORS[i % GENRE_COLORS.length]),
-        borderWidth: 1,
-        borderRadius: 6,
+        data: values,
+        backgroundColor: sorted.map((_,i) => GENRE_COLORS[i%GENRE_COLORS.length]+'bb'),
+        borderColor:      sorted.map((_,i) => GENRE_COLORS[i%GENRE_COLORS.length]),
+        borderWidth: 1, borderRadius: 6,
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: '#8888aa' }, grid: { color: '#2d2d4e' } },
-        y: { ticks: { color: '#e0e0f0', font: { size: 11 } }, grid: { display: false } }
+        x: { ticks: { color:'#8888aa' }, grid: { color:'#2d2d4e' } },
+        y: { ticks: { color:'#e0e0f0', font:{size:11} }, grid:{ display:false } }
       }
     }
   });
 }
 
-function renderWorksBreakdown(sorted, works) {
+function renderWorksBreakdown(data) {
+  const works = data.works || [];
+  const genres = data.genres || {};
+  const sorted = getSorted(data, currentSortMode);
   const el = document.getElementById('works-breakdown');
   el.innerHTML = '';
   sorted.forEach(([genreName, info], gi) => {
     const genreWorks = works.filter(w => w.genre === genreName && w.points > 0)
                             .sort((a,b) => a.rank - b.rank);
     if (genreWorks.length === 0) return;
+    const allGenreWorks = works.filter(w => w.genre === genreName).sort((a,b) => a.rank - b.rank);
+    const color = GENRE_COLORS[gi % GENRE_COLORS.length];
     const div = document.createElement('div');
     div.style.cssText = 'margin-bottom:16px;';
-    const color = GENRE_COLORS[gi % GENRE_COLORS.length];
     div.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block;"></span>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block;"></span>
         <strong>${genreName}</strong>
         <span class="badge badge-primary">${info.points}pt</span>
-        <button class="genre-works-btn" onclick="toggleWorks(this)">▼ ${genreWorks.length}作品を表示</button>
+        <span class="gt-muted">全${allGenreWorks.length}件 / TOP10:${info.top10Count||0}件</span>
+        <button class="genre-works-btn" onclick="toggleWorks(this)">▼ TOP10の${genreWorks.length}作品を表示</button>
       </div>
       <div class="works-list">
         ${genreWorks.map(w => `
@@ -841,50 +1110,78 @@ window.toggleWorks = function(btn) {
 };
 
 // ==================== Trend ====================
+window.setTrendMetric = function(metric, btn) {
+  currentTrendMetric = metric;
+  btn.closest('.metric-toggle').querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (trendRecords.length) renderTrend(trendRecords);
+};
+
+window.setHistoryMetric = function(metric, btn) {
+  currentHistoryMetric = metric;
+  btn.closest('.metric-toggle').querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (trendRecords.length) renderHistoryTable(trendRecords);
+};
+
 window.loadTrendData = async function() {
   if (!db) return;
   const days = parseInt(document.getElementById('trend-days').value);
-  const q = query(collection(db, COLLECTION), orderBy('__name__', 'desc'), limit(days));
-  const snap = await getDocs(q);
-  const records = [];
-  snap.forEach(d => records.push({ date: d.id, ...d.data() }));
-  records.reverse();
-  renderTrend(records);
-  renderHistoryTable(records);
+  // orderByを使わずに全取得 → クライアント側でソート（インデックス不要）
+  const snap = await getDocs(collection(db, COLLECTION));
+  const all = [];
+  snap.forEach(d => { if (d.id !== 'connection-test') all.push({ date: d.id, ...d.data() }); });
+  all.sort((a,b) => a.date.localeCompare(b.date));
+  trendRecords = all.slice(-days);
+  renderTrend(trendRecords);
+  renderHistoryTable(trendRecords);
 };
+
+function getMetricValue(genreInfo, metric) {
+  if (!genreInfo) return 0;
+  if (metric === 'count')   return genreInfo.count   || 0;
+  if (metric === 'avgRank') return genreInfo.avgRank  || 0;
+  return genreInfo.points || 0;
+}
 
 function renderTrend(records) {
   if (records.length === 0) return;
   const allGenres = new Set();
   records.forEach(r => Object.keys(r.genres || {}).forEach(g => allGenres.add(g)));
-  const genreList = [...allGenres];
+  // 最新日の件数順でジャンルを並べる
+  const lastRecord = records[records.length - 1];
+  const genreList = [...allGenres].sort((a,b) =>
+    (lastRecord?.genres?.[b]?.points||0) - (lastRecord?.genres?.[a]?.points||0)
+  );
+  const metricLabel = currentTrendMetric === 'count' ? '件数' : currentTrendMetric === 'avgRank' ? '平均順位' : 'ポイント';
+  const isInverted = currentTrendMetric === 'avgRank'; // 平均順位は低いほど良い
 
   const ctx = document.getElementById('trend-chart').getContext('2d');
   if (trendChart) trendChart.destroy();
   trendChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: records.map(r => formatDate(r.date)),
+      labels: records.map(r => r.date),
       datasets: genreList.map((g, i) => ({
         label: g,
-        data: records.map(r => r.genres?.[g]?.points || 0),
+        data: records.map(r => getMetricValue(r.genres?.[g], currentTrendMetric) || null),
         borderColor: GENRE_COLORS[i % GENRE_COLORS.length],
         backgroundColor: GENRE_COLORS[i % GENRE_COLORS.length] + '22',
-        borderWidth: 2,
-        pointRadius: 4,
-        tension: 0.3,
-        fill: false,
+        borderWidth: 2, pointRadius: 4, tension: 0.3, fill: false,
+        spanGaps: true,
       }))
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { color: '#e0e0f0', boxWidth: 12, font: { size: 11 } }, position: 'bottom' }
+        legend: { labels: { color:'#e0e0f0', boxWidth:12, font:{size:11} }, position:'bottom' },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} ${metricLabel}` } }
       },
       scales: {
-        x: { ticks: { color: '#8888aa' }, grid: { color: '#2d2d4e' } },
-        y: { ticks: { color: '#8888aa' }, grid: { color: '#2d2d4e' } }
+        x: { ticks:{ color:'#8888aa' }, grid:{ color:'#2d2d4e' } },
+        y: { ticks:{ color:'#8888aa' }, grid:{ color:'#2d2d4e' },
+             reverse: isInverted,
+             title: { display:true, text: metricLabel, color:'#8888aa', font:{size:11} } }
       }
     }
   });
@@ -898,7 +1195,12 @@ function renderHistoryTable(records) {
   }
   const allGenres = new Set();
   records.forEach(r => Object.keys(r.genres || {}).forEach(g => allGenres.add(g)));
-  const genreList = [...allGenres];
+  const lastRecord = records[records.length - 1];
+  const genreList = [...allGenres].sort((a,b) =>
+    (lastRecord?.genres?.[b]?.points||0) - (lastRecord?.genres?.[a]?.points||0)
+  );
+  const metric = currentHistoryMetric;
+  const suffix = metric === 'count' ? '件' : 'pt';
   wrap.innerHTML = `
     <div style="overflow-x:auto;">
       <table class="history-table">
@@ -911,8 +1213,11 @@ function renderHistoryTable(records) {
         <tbody>
           ${[...records].reverse().map(r => `
             <tr>
-              <td><strong>${formatDate(r.date)}</strong></td>
-              ${genreList.map(g => `<td>${r.genres?.[g]?.points || '-'}</td>`).join('')}
+              <td><strong>${r.date}</strong></td>
+              ${genreList.map(g => {
+                const v = getMetricValue(r.genres?.[g], metric);
+                return `<td>${v ? v + suffix : '-'}</td>`;
+              }).join('')}
             </tr>
           `).join('')}
         </tbody>
@@ -977,13 +1282,30 @@ function parseKakuyomuHTML(html) {
     const points = Math.max(0, 11 - rank);
     works.push({ rank, title, genre, points });
   });
-  // Aggregate by genre
-  const genres = {};
+
+  // ジャンル別集計（拡充版）
+  const genreMap = {};
   works.forEach(w => {
-    if (!genres[w.genre]) genres[w.genre] = { points: 0, count: 0 };
-    genres[w.genre].points += w.points;
-    genres[w.genre].count += 1;
+    if (!genreMap[w.genre]) genreMap[w.genre] = { points:0, count:0, top10Count:0, rankSum:0, bestRank:9999, topTitle:'' };
+    const g = genreMap[w.genre];
+    g.points    += w.points;
+    g.count     += 1;
+    g.rankSum   += w.rank;
+    if (w.rank <= 10) g.top10Count += 1;
+    if (w.rank < g.bestRank) { g.bestRank = w.rank; g.topTitle = w.title; }
   });
+  // 派生値を計算
+  const genres = {};
+  for (const [name, g] of Object.entries(genreMap)) {
+    genres[name] = {
+      points:     g.points,
+      count:      g.count,
+      top10Count: g.top10Count,
+      avgRank:    Math.round((g.rankSum / g.count) * 10) / 10,
+      bestRank:   g.bestRank === 9999 ? null : g.bestRank,
+      topTitle:   g.topTitle,
+    };
+  }
   return { works, genres };
 }
 
