@@ -451,8 +451,29 @@
     .gt-mini-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
     .gt-num { font-weight: 700; color: var(--primary-light); }
     .gt-muted { color: var(--text-muted); font-size: 0.8rem; }
-    .best-work { font-size: 0.78rem; color: var(--text-muted); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; }
+    .best-work { font-size: 0.78rem; color: var(--text-muted); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; position: relative; }
     .best-work:hover { color: var(--text); }
+    .best-work::after {
+      content: attr(data-tooltip);
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 0;
+      background: #2a2a4a;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      white-space: normal;
+      max-width: 320px;
+      min-width: 160px;
+      line-height: 1.5;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      z-index: 50;
+      pointer-events: none;
+    }
+    .best-work:hover::after { display: block; }
     /* Trend metric toggle */
     .trend-controls {
       display: flex;
@@ -951,7 +972,7 @@ function renderGenreTable(data, mode) {
       <td ${highlightTop10}><span class="gt-num">${info.top10Count || 0}</span><span class="gt-muted">件</span></td>
       <td ${highlightAvg}><span class="gt-num">${info.avgRank ? info.avgRank.toFixed(1) : '--'}</span><span class="gt-muted">位</span></td>
       <td><span class="share-pill">${shareVal}%</span></td>
-      <td><div class="best-work" title="${info.topTitle||''}">${info.bestRank ? `${info.bestRank}位 ` : ''}${info.topTitle || '--'}</div></td>
+      <td><div class="best-work" data-tooltip="${info.topTitle||''}">${info.bestRank ? `${info.bestRank}位 ` : ''}${info.topTitle || '--'}</div></td>
     `;
     tbody.appendChild(tr);
   });
