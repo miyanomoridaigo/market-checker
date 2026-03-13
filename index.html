@@ -451,7 +451,8 @@
     .gt-mini-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
     .gt-num { font-weight: 700; color: var(--primary-light); }
     .gt-muted { color: var(--text-muted); font-size: 0.8rem; }
-    .best-work { font-size: 0.78rem; color: var(--text-muted); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .best-work { font-size: 0.78rem; color: var(--text-muted); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; }
+    .best-work:hover { color: var(--text); }
     /* Trend metric toggle */
     .trend-controls {
       display: flex;
@@ -536,30 +537,6 @@
 
     <!-- Ranking Content -->
     <div id="ranking-content">
-
-      <!-- Summary Cards -->
-      <div class="summary-cards" id="summary-cards">
-        <div class="summary-card c1">
-          <div class="sc-label">集計作品数</div>
-          <div class="sc-value" id="sc-total">-</div>
-          <div class="sc-sub" id="sc-total-sub">カクヨムネクスト除く</div>
-        </div>
-        <div class="summary-card c2">
-          <div class="sc-label">🏆 ポイント1位</div>
-          <div class="sc-value" id="sc-top-genre">-</div>
-          <div class="sc-sub" id="sc-top-pts">-</div>
-        </div>
-        <div class="summary-card c3">
-          <div class="sc-label">📦 最多ランクイン</div>
-          <div class="sc-value" id="sc-top-count">-</div>
-          <div class="sc-sub" id="sc-top-count-sub">-</div>
-        </div>
-        <div class="summary-card c4">
-          <div class="sc-label">⭐ 最高順位作品</div>
-          <div class="sc-value" id="sc-best-rank">-</div>
-          <div class="sc-sub" id="sc-best-title">-</div>
-        </div>
-      </div>
 
       <!-- Genre Detail Table -->
       <div class="card">
@@ -909,33 +886,9 @@ function renderRanking(data, date) {
     const d = ts.toDate ? ts.toDate() : new Date(ts);
     document.getElementById('updated-at').textContent = '最終更新: ' + d.toLocaleString('ja-JP');
   }
-  renderSummaryCards(data);
   renderGenreTable(data, currentSortMode);
   renderGenreChart(data, currentChartMode);
   renderWorksBreakdown(data);
-}
-
-function renderSummaryCards(data) {
-  const works = data.works || [];
-  const genres = data.genres || {};
-  const totalWorks = works.length;
-  // ポイント1位
-  const byPts = Object.entries(genres).sort((a,b) => b[1].points - a[1].points);
-  const [topGenre, topInfo] = byPts[0] || ['--', {points:0, count:0}];
-  // 件数1位
-  const byCount = Object.entries(genres).sort((a,b) => b[1].count - a[1].count);
-  const [countGenre, countInfo] = byCount[0] || ['--', {count:0}];
-  // 最高順位作品
-  const bestWork = [...works].sort((a,b) => a.rank - b.rank)[0];
-
-  document.getElementById('sc-total').textContent = totalWorks;
-  document.getElementById('sc-total-sub').textContent = `${Object.keys(genres).length}ジャンル`;
-  document.getElementById('sc-top-genre').textContent = topGenre;
-  document.getElementById('sc-top-pts').textContent = `${topInfo.points}pt / ${topInfo.count}作品`;
-  document.getElementById('sc-top-count').textContent = countGenre;
-  document.getElementById('sc-top-count-sub').textContent = `${countInfo.count}作品ランクイン`;
-  document.getElementById('sc-best-rank').textContent = bestWork ? `${bestWork.rank}位` : '--';
-  document.getElementById('sc-best-title').textContent = bestWork ? `${bestWork.title.substring(0,18)}…` : '--';
 }
 
 window.setSortMode = function(mode, btn) {
@@ -998,7 +951,7 @@ function renderGenreTable(data, mode) {
       <td ${highlightTop10}><span class="gt-num">${info.top10Count || 0}</span><span class="gt-muted">件</span></td>
       <td ${highlightAvg}><span class="gt-num">${info.avgRank ? info.avgRank.toFixed(1) : '--'}</span><span class="gt-muted">位</span></td>
       <td><span class="share-pill">${shareVal}%</span></td>
-      <td><div class="best-work" title="${info.topTitle||''}">${info.bestRank ? `${info.bestRank}位 ` : ''}${info.topTitle ? info.topTitle.substring(0,20)+'…' : '--'}</div></td>
+      <td><div class="best-work" title="${info.topTitle||''}">${info.bestRank ? `${info.bestRank}位 ` : ''}${info.topTitle || '--'}</div></td>
     `;
     tbody.appendChild(tr);
   });
